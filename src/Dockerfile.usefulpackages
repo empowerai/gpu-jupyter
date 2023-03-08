@@ -49,8 +49,7 @@ RUN pip install -U "itsdangerous<2.1.0" \
   python-Levenshtein \
   polyfuzz \
   mlflow \
-  
-
+  raiwidgets 
 RUN fix-permissions /home/$NB_USER
 
 # Switch back to jovyan to avoid accidental container runs as root

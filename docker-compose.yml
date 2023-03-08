@@ -1,7 +1,10 @@
 version: "3.8"
 services:
   gpu-jupyter:
-    build: .build
+    build:
+      context: .build
+      args:
+        NB_USER: "emp"
     deploy:
       resources:
         reservations:
@@ -10,10 +13,12 @@ services:
               - gpu
     ports:
       - 8848:8888
+      - 5005:5000
     volumes:
-      - ./data:/home/jovyan/work
-      - hf_cache:/home/jovyan/.cache/huggingface/hub
+      - ./data:/home/$NB_USER/work
+      - hf_cache:/home/$NB_USER/.cache/huggingface/hub
     environment:
+      # enable sudo permissions
       GRANT_SUDO: "yes"
       JUPYTER_ENABLE_LAB: "yes"
       NB_UID: ${JUPYTER_UID:-1000}
@@ -22,10 +27,11 @@ services:
       MLFLOW_TRACKING_URI: "http://172.16.20.150:5000"
       AWS_ACCESS_KEY_ID: "admin"
       AWS_SECRET_ACCESS_KEY: "sample_key"
-    # enable sudo permissions
     user:
       "root"
     restart: always
     shm_size: '2gb'
+    image: ncicto/gpu-jupyter_py39
+    container_name: gpu-jupyter_py39
 volumes:
   hf_cache:

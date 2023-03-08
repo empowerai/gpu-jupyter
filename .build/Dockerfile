@@ -25,7 +25,7 @@ ARG ROOT_CONTAINER=ubuntu:focal
 
 
 LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
-ARG NB_USER="jovyan"
+ARG NB_USER
 ARG NB_UID="1000"
 ARG NB_GID="100"
 
@@ -102,7 +102,7 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
 USER ${NB_UID}
 
 # Pin python version here, or set it to "default"
-ARG PYTHON_VERSION=3.10
+ARG PYTHON_VERSION=3.9
 
 # Setup work directory for backward-compatibility
 RUN mkdir "/home/${NB_USER}/work" && \
@@ -402,7 +402,7 @@ RUN pip install --no-cache-dir jupyter_contrib_nbextensions \
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
 
 RUN pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git pytesseract
-RUN pip install -U "itsdangerous<2.1.0" \
+RUN pip install --no-cache-dir "itsdangerous<2.1.0" \
   transformers \
   datasets \
   accelerate \
@@ -417,8 +417,9 @@ RUN pip install -U "itsdangerous<2.1.0" \
   nltk \
   fuzzywuzzy \
   python-Levenshtein \
-  polyfuzz
-
+  polyfuzz \
+  mlflow \
+  raiwidgets 
 RUN fix-permissions /home/$NB_USER
 
 # Switch back to jovyan to avoid accidental container runs as root
