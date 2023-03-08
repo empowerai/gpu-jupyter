@@ -31,6 +31,26 @@ RUN pip install --no-cache-dir jupyter_contrib_nbextensions \
 #  jupyter nbextension enable codefolding/main
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
 
+RUN pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git pytesseract
+RUN pip install -U "itsdangerous<2.1.0" \
+  transformers \
+  datasets \
+  accelerate \
+  bitsandbytes \
+  optuna \
+  tensorboard \
+  pillow \
+  python-poppler \
+  scikit-learn \
+  pyodbc \
+  plotly \
+  nltk \
+  fuzzywuzzy \
+  python-Levenshtein \
+  polyfuzz \
+  mlflow \
+  
+
 RUN fix-permissions /home/$NB_USER
 
 # Switch back to jovyan to avoid accidental container runs as root

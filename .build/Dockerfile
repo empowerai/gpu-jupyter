@@ -320,7 +320,7 @@ LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
 # Install Tensorflow, check compatibility here:
 # https://www.tensorflow.org/install/source#gpu
 # installation via conda leads to errors in version 4.8.2
-RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip --upgrade setuptools --upgrade wheel && \
     pip install --no-cache-dir "tensorflow==2.8.2"
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir keras==2.8
@@ -337,12 +337,21 @@ RUN conda install --quiet --yes \
 # Installation via conda leads to errors installing cudatoolkit=11.1
 RUN pip install --no-cache-dir torch torchvision torchaudio torchviz --extra-index-url https://download.pytorch.org/whl/cu116
 
+ENV CUDA_PATH=/opt/conda/
+
 USER root
 
-# Install nvtop to monitor the gpu tasks
+# Install nvtop to monitor the gpu tasks -- Added tesseract espeak-ng ffmpeg
 RUN apt-get update && \
-    apt-get install -y cmake libncurses5-dev libncursesw5-dev git && \
+    apt-get install -y cmake libncurses5-dev libncursesw5-dev git libsndfile1-dev tesseract-ocr espeak-ng ffmpeg \
+    pkg-config \
+    gcc \
+    g++ \
+    libpoppler-cpp-dev \
+    git-lfs && \
     rm -rf /var/lib/apt/lists/*
+
+RUN git lfs install
 
 RUN git clone https://github.com/Syllo/nvtop.git /run/nvtop && \
     mkdir -p /run/nvtop/build && cd /run/nvtop/build && \
@@ -391,6 +400,24 @@ RUN pip install --no-cache-dir jupyter_contrib_nbextensions \
   jupyter_nbextensions_configurator rise
 #  jupyter nbextension enable codefolding/main
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
+
+RUN pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git pytesseract
+RUN pip install -U "itsdangerous<2.1.0" \
+  transformers \
+  datasets \
+  accelerate \
+  bitsandbytes \
+  optuna \
+  tensorboard \
+  pillow \
+  python-poppler \
+  scikit-learn \
+  pyodbc \
+  plotly \
+  nltk \
+  fuzzywuzzy \
+  python-Levenshtein \
+  polyfuzz
 
 RUN fix-permissions /home/$NB_USER
 
