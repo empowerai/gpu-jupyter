@@ -25,7 +25,7 @@ ARG ROOT_CONTAINER=ubuntu:focal
 
 
 LABEL maintainer="Jupyter Project <jupyter@googlegroups.com>"
-ARG NB_USER
+ARG NB_USER="jovyan"
 ARG NB_UID="1000"
 ARG NB_GID="100"
 
@@ -419,6 +419,7 @@ RUN pip install --no-cache-dir "itsdangerous<2.1.0" \
   python-Levenshtein \
   polyfuzz \
   mlflow \
+  boto3 \
   raiwidgets 
 RUN fix-permissions /home/$NB_USER
 
@@ -426,4 +427,4 @@ RUN fix-permissions /home/$NB_USER
 USER $NB_UID
 
 # Copy jupyter_notebook_config.json
-COPY jupyter_notebook_config.json /etc/jupyter/
+# COPY jupyter_notebook_config.json /etc/jupyter/

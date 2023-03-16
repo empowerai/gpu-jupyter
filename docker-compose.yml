@@ -4,7 +4,7 @@ services:
     build:
       context: .build
       args:
-        NB_USER: "emp"
+        NB_USER: "jovyan"
     deploy:
       resources:
         reservations:
@@ -15,23 +15,36 @@ services:
       - 8848:8888
       - 5005:5000
     volumes:
-      - ./data:/home/$NB_USER/work
-      - hf_cache:/home/$NB_USER/.cache/huggingface/hub
+      - ./data:/home/${NB_USER}/work
+      - hf_cache:/home/${NB_USER}/.cache/huggingface/hub
+    working_dir: /home/${NB_USER}
     environment:
       # enable sudo permissions
       GRANT_SUDO: "yes"
+      CHOWN_HOME: "yes"
+      CHOWN_HOME_OPTS: "-R"
+      CHOWN_EXTRA: "/home/${NB_USER}/.cache"
+      CHOWN_OPTS: "-R"
       JUPYTER_ENABLE_LAB: "yes"
-      NB_UID: ${JUPYTER_UID:-1000}
-      NB_GID: ${JUPYTER_GID:-1000}
-      MLFLOW_S3_ENDPOINT_URL: "http://172.16.20.150:9000"
-      MLFLOW_TRACKING_URI: "http://172.16.20.150:5000"
-      AWS_ACCESS_KEY_ID: "admin"
-      AWS_SECRET_ACCESS_KEY: "sample_key"
+    # .env vars
+      NB_USER: $NB_USER
+      NB_UID: $NB_UID
+      NB_GID: $NB_GID
+      MLFLOW_S3_ENDPOINT_URL: $MLFLOW_S3_ENDPOINT_URL
+      MLFLOW_TRACKING_URI: $MLFLOW_TRACKING_URI
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
     user:
       "root"
     restart: always
     shm_size: '2gb'
     image: ncicto/gpu-jupyter_py39
     container_name: gpu-jupyter_py39
+    # Public bridge neccesary when running on same host as mlflow service
+    networks:
+      - public
+networks:
+  public:
+    driver: bridge    
 volumes:
   hf_cache:

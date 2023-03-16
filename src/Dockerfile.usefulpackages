@@ -32,7 +32,7 @@ RUN pip install --no-cache-dir jupyter_contrib_nbextensions \
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
 
 RUN pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git pytesseract
-RUN pip install -U "itsdangerous<2.1.0" \
+RUN pip install --no-cache-dir "itsdangerous<2.1.0" \
   transformers \
   datasets \
   accelerate \
@@ -49,6 +49,7 @@ RUN pip install -U "itsdangerous<2.1.0" \
   python-Levenshtein \
   polyfuzz \
   mlflow \
+  boto3 \
   raiwidgets 
 RUN fix-permissions /home/$NB_USER
 
