@@ -6,11 +6,15 @@
 
 
 # Use NVIDIA CUDA as base image and run the same installation as in the other packages.
-# The version of cudatoolkit must match those of the base image, see Dockerfile.pytorch
+# The version of cuda must match those of the packages installed in src/Dockerfile.gpulibs
 FROM nvidia/cuda:11.6.2-cudnn8-runtime-ubuntu20.04
 LABEL authors="Christoph Schranz <christoph.schranz@salzburgresearch.at>, Mathematical Michael <consistentbayes@gmail.com>"
 # This is a concatenated Dockerfile, the maintainers of subsequent sections may vary.
 RUN chmod 1777 /tmp && chmod 1777 /var/tmp
+
+# install apt-utils in header to fix warnings in docker-stacks
+RUN apt-get update && \
+    apt-get -y install apt-utils
 
 ############################################################################
 #################### Dependency: jupyter/base-image ########################
@@ -315,7 +319,7 @@ WORKDIR "${HOME}"
 ########################## Dependency: gpulibs #############################
 ############################################################################
 
-LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>"
+LABEL maintainer="Christoph Schranz <christoph.schranz@salzburgresearch.at>, Mathematical Michael <consistentbayes@gmail.com>"
 
 # Install Tensorflow, check compatibility here:
 # https://www.tensorflow.org/install/source#gpu
@@ -329,17 +333,29 @@ RUN pip install --upgrade pip && \
 RUN conda install --quiet --yes \
     pyyaml mkl mkl-include setuptools cmake cffi typing && \
     conda clean --all -f -y && \
-    fix-permissions $CONDA_DIR && \
-    fix-permissions /home/$NB_USER
+    fix-permissions "${CONDA_DIR}" && \
+    fix-permissions "/home/${NB_USER}"
 
 # Check compatibility here:
 # https://pytorch.org/get-started/locally/
 # Installation via conda leads to errors installing cudatoolkit=11.1
-RUN pip install --no-cache-dir torch torchvision torchaudio torchviz --extra-index-url https://download.pytorch.org/whl/cu116
+# RUN pip install --no-cache-dir torch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1  && \
+#     torchviz==0.0.2 --extra-index-url https://download.pytorch.org/whl/cu116
+RUN set -ex \
+ && buildDeps=' \
+    torch==1.13.1 \
+    torchvision==0.14.1 \
+    torchaudio==0.13.1 \
+    torchviz==0.0.2 \
+' \
+ && pip install --no-cache-dir $buildDeps --extra-index-url https://download.pytorch.org/whl/cu116 \
+ && fix-permissions "${CONDA_DIR}" \
+ && fix-permissions "/home/${NB_USER}"
 
 ENV CUDA_PATH=/opt/conda/
 
 USER root
+ENV CUDA_PATH=/opt/conda/
 
 # Install nvtop to monitor the gpu tasks -- Added tesseract espeak-ng ffmpeg
 RUN apt-get update && \
@@ -360,7 +376,8 @@ RUN git clone https://github.com/Syllo/nvtop.git /run/nvtop && \
     (make install 2> /dev/null || echo "make install was not successful") && \
     cd /tmp && rm -rf /tmp/nvtop
 
-RUN fix-permissions /home/$NB_USER
+USER root
+RUN ln -s /opt/conda/bin/ptxas /usr/bin/ptxas
 
 USER $NB_UID
 
@@ -372,65 +389,47 @@ LABEL authors="Christoph Schranz <christoph.schranz@salzburgresearch.at>, Mathem
 
 USER root
 
-RUN pip install --no-cache-dir ipyleaflet "plotly>=4.14.3" "ipywidgets>=7.5"
+# Install useful packages and Graphviz
+RUN apt-get update \
+ && apt-get -y install --no-install-recommends htop apt-utils iputils-ping graphviz libgraphviz-dev openssh-client \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install important packages and Graphviz
+USER $NB_UID
 RUN set -ex \
  && buildDeps=' \
     graphviz==0.19.1 \
+    pytest==7.2.2 \
 ' \
- && apt-get update \
- && apt-get -y install htop apt-utils iputils-ping graphviz libgraphviz-dev openssh-client \
- && pip install --no-cache-dir $buildDeps
+ && pip install --no-cache-dir $buildDeps \
+ && fix-permissions "${CONDA_DIR}" \
+ && fix-permissions "/home/${NB_USER}"
 
-# Install various extensions
-RUN fix-permissions $CONDA_DIR
+# upgrade jupyter-server for compatibility
+RUN pip install --no-cache-dir --upgrade \
+    distributed==2023.3.0 \
+    jupyter-server==2.4 \
+    # fix permissions of conda
+ && fix-permissions "${CONDA_DIR}" \
+ && fix-permissions "/home/${NB_USER}"
 
-# RUN jupyter labextension install @jupyterlab/github
-# RUN pip install jupyterlab-git
-RUN pip install jupyterlab-drawio
-RUN jupyter nbextension enable --py --sys-prefix ipyleaflet
-RUN jupyter labextension install jupyterlab-plotly
-RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager plotlywidget
-# RUN pip install --no-cache-dir jupyter-tabnine  --user && \
-#   jupyter nbextension install --py jupyter_tabnine --user && \
-#   jupyter nbextension enable --py jupyter_tabnine --user && \
-#   jupyter serverextension enable --py jupyter_tabnine --user
-RUN pip install --no-cache-dir jupyter_contrib_nbextensions \
-  jupyter_nbextensions_configurator rise
-#  jupyter nbextension enable codefolding/main
-RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
-
-USER ${NB_UID}
-
-
-RUN pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git pytesseract
-RUN pip install --no-cache-dir "itsdangerous<2.1.0" \
-  transformers \
-  datasets \
-  accelerate \
-  bitsandbytes \
-  optuna \
-  tensorboard \
-  pillow \
-  python-poppler \
-  scikit-learn \
-  pyodbc \
-  plotly \
-  nltk \
-  fuzzywuzzy \
-  python-Levenshtein \
-  polyfuzz \
-  mlflow \
-  boto3 \
-  raiwidgets 
-
-
-# Install Python 3 packages
-
-# RUN mamba install --quiet --yes cudatoolkit
-USER root
-RUN fix-permissions /home/$NB_USER
+RUN pip install --no-cache-dir \
+    # install extension manager
+    jupyter_contrib_nbextensions==0.7.0 \
+    jupyter_nbextensions_configurator==0.6.1 \
+    # install git extension
+    jupyterlab-git==0.41.0 \
+    # install plotly extension
+    plotly==5.13.1 \
+    # install drawio and graphical extensions
+    jupyterlab-drawio==0.9.0 \
+    rise==5.7.1 \
+    ipyleaflet==0.17.2 \
+    ipywidgets==8.0.4 \
+    # install spell checker
+    jupyterlab-spellchecker==0.7.3 && \
+    # fix permissions of conda
+    fix-permissions "${CONDA_DIR}" && \
+    fix-permissions "/home/${NB_USER}"
 
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID
