@@ -359,22 +359,15 @@ ENV CUDA_PATH=/opt/conda/
 
 # Install nvtop to monitor the gpu tasks -- Added tesseract espeak-ng ffmpeg
 RUN apt-get update && \
-    apt-get install -y cmake libncurses5-dev libncursesw5-dev git libsndfile1-dev tesseract-ocr espeak-ng ffmpeg \
-    pkg-config \
-    gcc \
-    g++ \
-    libpoppler-cpp-dev \
-    git-lfs && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends cmake libncurses5-dev libncursesw5-dev git && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN git lfs install
-
-RUN git clone https://github.com/Syllo/nvtop.git /run/nvtop && \
-    mkdir -p /run/nvtop/build && cd /run/nvtop/build && \
-    (cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True 2> /dev/null || echo "cmake was not successful") && \
-    (make 2> /dev/null || echo "make was not successful") && \
-    (make install 2> /dev/null || echo "make install was not successful") && \
-    cd /tmp && rm -rf /tmp/nvtop
+# reinstall nvcc with cuda-nvcc to install ptax
+USER $NB_UID
+RUN conda install -c nvidia cuda-nvcc -y && \
+    conda clean --all -f -y && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions /home/$NB_USER
 
 USER root
 RUN ln -s /opt/conda/bin/ptxas /usr/bin/ptxas
