@@ -23,8 +23,8 @@ services:
       GRANT_SUDO: "yes"
       CHOWN_HOME: "yes"
       CHOWN_HOME_OPTS: "-R"
-      CHOWN_EXTRA: "/home/${NB_USER}/.cache"
-      CHOWN_OPTS: "-R"
+      # CHOWN_EXTRA: "/home/${NB_USER}/.cache"
+      # CHOWN_OPTS: "-R"
       JUPYTER_ENABLE_LAB: "yes"
     # .env vars
       NB_USER: $NB_USER
@@ -40,6 +40,8 @@ services:
     shm_size: '2gb'
     image: ncicto/gpu-jupyter_py39
     container_name: gpu-jupyter_py39
+    # image: cschranz/gpu-jupyter:v1.5_cuda-11.6_ubuntu-20.04_python-only
+    # container_name: gpu-jupyter-cschranz
     # Public bridge neccesary when running on same host as mlflow service
     networks:
       - public

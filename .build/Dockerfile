@@ -401,6 +401,9 @@ RUN pip install --no-cache-dir jupyter_contrib_nbextensions \
 #  jupyter nbextension enable codefolding/main
 RUN jupyter labextension install @ijmbarr/jupyterlab_spellchecker
 
+USER ${NB_UID}
+
+
 RUN pip install --no-cache-dir git+https://github.com/facebookresearch/detectron2.git pytesseract
 RUN pip install --no-cache-dir "itsdangerous<2.1.0" \
   transformers \
@@ -421,6 +424,12 @@ RUN pip install --no-cache-dir "itsdangerous<2.1.0" \
   mlflow \
   boto3 \
   raiwidgets 
+
+
+# Install Python 3 packages
+
+# RUN mamba install --quiet --yes cudatoolkit
+USER root
 RUN fix-permissions /home/$NB_USER
 
 # Switch back to jovyan to avoid accidental container runs as root
